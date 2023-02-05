@@ -107,7 +107,7 @@ class SvcEncoder(nn.Module):
         rdecoder_inp, f0_denorm, pitch_pred = self.add_pitch(f0, mel2ph)
         decoder_inp = decoder_inp + rdecoder_inp
         decoder_inp = (decoder_inp + spk_embed) * tgt_nonpadding
-        return decoder_inp, f0_denorm
+        return decoder_inp.transcope(1,2), f0_denorm
 
     def add_pitch(self, f0, mel2ph):
         pitch_padding = (mel2ph == 0)
