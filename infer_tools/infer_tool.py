@@ -11,7 +11,7 @@ import torch
 
 import utils
 from infer_tools.f0_static import compare_pitch, static_f0_time
-from modules.diff.diffusion import GaussianDiffusion
+from modules.diff.diffusion_V2 import GaussianDiffusion
 from modules.diff.net import DiffNet
 from modules.vocoders.nsf_hifigan import NsfHifiGAN
 from preprocessing.hubertinfer import HubertEncoder
@@ -88,7 +88,7 @@ class Svc:
         self.model.cuda()
         self.vocoder = NsfHifiGAN()
 
-    def infer(self, in_path, key, acc, spk_id=0, use_crepe=True):
+    def infer(self, in_path, key, acc, spk_id=0, use_crepe=True, project_name=None):
         batch = self.pre(in_path, acc, spk_id, use_crepe)
         batch['f0'] = batch['f0'] + (key / 12)
         batch['f0'][batch['f0'] > np.log2(hparams['f0_max'])] = 0
@@ -98,7 +98,7 @@ class Svc:
             spk_embed = torch.LongTensor([0]).cuda()
         speedup = torch.LongTensor([acc]).cuda()
         initial_noise = torch.randn((1, 1, self.model.mel_bins, batch['f0'].shape[1])).cuda()
-        ONNX = True
+        ONNX = False
         if ONNX:
             torch.onnx.export(
                 self.model,
@@ -110,7 +110,7 @@ class Svc:
                     initial_noise,
                     speedup
                 ),
-                "ShirohaSvc_DiffSvc.onnx",
+                f"{project_name}_DiffSvc.onnx",
                 input_names=["hubert", "mel2ph", "spk_embed", "f0", "initial_noise", "speedup"],
                 output_names=["mel_pred", "f0_pred"],
                 dynamic_axes={
@@ -122,7 +122,8 @@ class Svc:
                 opset_version=16
             )
         mel_pred, f0_pred = self.model(
-            batch['hubert'].cuda(), batch['mel2ph'].cuda(), spk_embed.cuda(), batch['f0'].cuda(), initial_noise, speedup
+            batch['hubert'].cuda(), batch['mel2ph'].cuda(), spk_embed.cuda(), batch['f0'].cuda(), initial_noise,
+            speedup, True, "DiffShiroha"
         )
         wav_pred = self.vocoder.spec2wav(mel_pred, f0=f0_pred)
         return wav_pred
