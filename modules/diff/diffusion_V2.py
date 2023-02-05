@@ -267,12 +267,8 @@ class GaussianDiffusion(nn.Module):
                 opset_version=16
             )
         '''"initial_noise": [3]'''
-        # cond = decoder_inp
-        cond = torch.zeros([1, 256, 629]).cuda()
-        cond = cond + 0.5
-        # x = initial_noise
-        x = torch.zeros((1, 1, self.mel_bins, cond.shape[2]), dtype=torch.float32).cuda()
-        x = x + 0.5
+        cond = decoder_inp
+        x = initial_noise
         pndms = speedup[0]
         device = cond.device
         n_frames = cond.shape[2]
