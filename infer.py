@@ -35,14 +35,16 @@ def run_clip(raw_audio_path, svc_model, key, acc, use_crepe, spk_id=0, auto_key=
                 np.zeros(int(np.ceil(length / hparams['hop_size']))),
                 np.zeros(length))
         else:
-            _audio = svc_model.infer(raw_path, spk_id=spk_id, key=key, acc=acc, use_crepe=use_crepe)
+            _audio = svc_model.infer(raw_path, spk_id=spk_id, key=key, acc=acc, use_crepe=use_crepe,
+                                     project_name=project_name)
         fix_audio = np.zeros(length)
         fix_audio[:] = np.mean(_audio)
         fix_audio[:len(_audio)] = _audio[0 if len(_audio) < len(fix_audio) else len(_audio) - len(fix_audio):]
         audio.extend(list(fix_audio))
         count += 1
     if out_path is None:
-        out_path = f'./results/{clean_name}_{key}key_{project_name}_{hparams["residual_channels"]}_{hparams["residual_layers"]}_{int(step / 1000)}k_{accelerate}x.{kwargs["format"]}'
+        out_path = f'./results/{clean_name}_{key}key_{project_name}_{hparams["residual_channels"]}_' \
+                   f'{hparams["residual_layers"]}_{int(step / 1000)}k_{accelerate}x.{kwargs["format"]}'
     soundfile.write(out_path, audio, hparams["audio_sample_rate"], 'PCM_16', format=out_path.split('.')[-1])
     return np.array(f0_tst), np.array(f0_pred), audio
 
